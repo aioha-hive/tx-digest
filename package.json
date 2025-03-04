@@ -1,7 +1,7 @@
 {
   "name": "@aioha/tx-digest",
   "version": "1.0.0",
-  "description": "",
+  "description": "Hive transaction serializer and digest",
   "main": "index.js",
   "types": "index.d.ts",
   "type": "module",
@@ -9,8 +9,14 @@
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
-  "author": "",
+  "author": "techcoderx",
   "license": "MIT",
+  "repository": {
+    "url": "https://github.com/aioha-hive/tx-digest"
+  },
+  "bugs": {
+    "url": "https://github.com/aioha-hive/tx-digest/issues"
+  },
   "dependencies": {
     "bs58": "^6.0.0"
   }
