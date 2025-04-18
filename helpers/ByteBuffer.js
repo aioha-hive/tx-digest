@@ -238,6 +238,68 @@ export class ByteBuffer {
   // types/ints/int8
 
   /**
+   * Writes an 8bit signed integer.
+   * @param {number} value Value to write
+   * @param {number=} offset Offset to write to. Will use and advance {@link ByteBuffer#offset} by `1` if omitted.
+   * @returns {!ByteBuffer} this
+   * @expose
+   */
+
+  writeInt8(value, offset) {
+    const relative = typeof offset === 'undefined'
+
+    if (relative) {
+      offset = this.offset
+    }
+
+    if (!this.noAssert) {
+      if (typeof value !== 'number' || value % 1 !== 0) {
+        throw TypeError('Illegal value: ' + value + ' (not an integer)')
+      }
+
+      value |= 0
+
+      if (typeof offset !== 'number' || offset % 1 !== 0) {
+        throw TypeError('Illegal offset: ' + offset + ' (not an integer)')
+      }
+
+      offset >>>= 0
+
+      if (offset < 0 || offset + 0 > this.buffer.byteLength) {
+        throw RangeError('Illegal offset: 0 <= ' + offset + ' (+0) <= ' + this.buffer.byteLength)
+      }
+    }
+
+    offset += 1
+
+    let capacity0 = this.buffer.byteLength
+
+    if (offset > capacity0) {
+      this.resize((capacity0 *= 2) > offset ? capacity0 : offset)
+    }
+
+    offset -= 1
+
+    this.view.setInt8(offset, value)
+
+    if (relative) {
+      this.offset += 1
+    }
+
+    return this
+  }
+
+  /**
+   * Writes an 8bit signed integer. This is an alias of {@link ByteBuffer#writeInt8}.
+   * @function
+   * @param {number} value Value to write
+   * @param {number=} offset Offset to write to. Will use and advance {@link ByteBuffer#offset} by `1` if omitted.
+   * @returns {!ByteBuffer} this
+   * @expose
+   */
+  writeByte = this.writeInt8
+
+  /**
    * Writes an 8bit unsigned integer.
    * @param {number} value Value to write
    * @param {number=} offset Offset to write to. Will use and advance {@link ByteBuffer#offset} by `1` if omitted.
