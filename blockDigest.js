@@ -1,7 +1,5 @@
 import { ByteBuffer } from './helpers/ByteBuffer.js'
 import { Serializer } from './helpers/serializer.js'
-import { uint8ArrayToHex } from './helpers/uint8Array.js'
-import { sha256 } from '@noble/hashes/sha256'
 
 // const sha256 = async (message) => {
 //   const hashBuffer = await window.crypto.subtle.digest('SHA-256', message)
@@ -18,6 +16,5 @@ export const serializeBlock = async (block) => {
   }
   buffer.flip()
   const blockData = new Uint8Array(buffer.toBuffer())
-  const hash = uint8ArrayToHex(await sha256(blockData))
-  return { digest: blockData, hash: hash }
+  return { digest: blockData }
 }

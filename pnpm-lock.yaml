@@ -8,18 +8,11 @@ importers:
 
   .:
     dependencies:
-      '@noble/hashes':
-        specifier: ^1.7.1
-        version: 1.7.2
       bs58:
         specifier: ^6.0.0
         version: 6.0.0
 
 packages:
-
-  '@noble/hashes@1.7.2':
-    resolution: {integrity: sha512-biZ0NUSxyjLLqo6KxEJ1b+C2NAx0wtDoFvCaXHGgUkeHzf3Xc1xKumFKREuT7f7DARNZ/slvYUwFG6B0f2b6hQ==}
-    engines: {node: ^14.21.3 || >=16}
 
   base-x@5.0.0:
     resolution: {integrity: sha512-sMW3VGSX1QWVFA6l8U62MLKz29rRfpTlYdCqLdpLo1/Yd4zZwSbnUaDfciIAowAqvq7YFnWq9hrhdg1KYgc1lQ==}
@@ -28,8 +21,6 @@ packages:
     resolution: {integrity: sha512-PD0wEnEYg6ijszw/u8s+iI3H17cTymlrwkKhDhPZq+Sokl3AU4htyBFTjAeNAlCCmg0f53g6ih3jATyCKftTfw==}
 
 snapshots:
-
-  '@noble/hashes@1.7.2': {}
 
   base-x@5.0.0: {}
 
