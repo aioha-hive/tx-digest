@@ -1,6 +1,6 @@
 /**
  * @license bytebuffer.js (c) 2015 Daniel Wirtz <dcode@dcode.io>
- * Backing buffer: ArrayBuffer, Accessor: DataView
+ * Backing buffer: ArrayBuffer
  * Released under the Apache License, Version 2.0
  * see: https://github.com/dcodeIO/bytebuffer.js for details
  * modified by @xmcl/bytebuffer
@@ -156,29 +156,6 @@ export class ByteBuffer {
     this.limit = capacity
     this.littleEndian = littleEndian
     this.noAssert = noAssert
-  }
-
-  /**
-   * Gets the accessor type.
-   * @returns {Function} `Buffer` under node.js, `Uint8Array` respectively `DataView` in the browser (classes)
-   * @expose
-   */
-  static accessor = function () {
-    return DataView
-  }
-
-  /**
-   * Allocates a new ByteBuffer backed by a buffer of the specified capacity.
-   * @param {number=} capacity Initial capacity. Defaults to {@link ByteBuffer.DEFAULT_CAPACITY}.
-   * @param {boolean=} littleEndian Whether to use little or big endian byte order. Defaults to
-   *  {@link ByteBuffer.DEFAULT_ENDIAN}.
-   * @param {boolean=} noAssert Whether to skip assertions of offsets and values. Defaults to
-   *  {@link ByteBuffer.DEFAULT_NOASSERT}.
-   * @returns {!ByteBuffer}
-   * @expose
-   */
-  static allocate = function (capacity, littleEndian, noAssert) {
-    return new ByteBuffer(capacity, littleEndian, noAssert)
   }
 
   /**
@@ -514,64 +491,6 @@ export class ByteBuffer {
   // types/ints/int32
 
   /**
-   * Writes a 32bit signed integer.
-   * @param {number} value Value to write
-   * @param {number=} offset Offset to write to. Will use and increase {@link ByteBuffer#offset} by `4` if omitted.
-   * @expose
-   */
-  writeInt32(value, offset) {
-    const relative = typeof offset === 'undefined'
-
-    if (relative) {
-      offset = this.offset
-    }
-
-    if (!this.noAssert) {
-      if (typeof value !== 'number' || value % 1 !== 0) {
-        throw TypeError('Illegal value: ' + value + ' (not an integer)')
-      }
-
-      value |= 0
-
-      if (typeof offset !== 'number' || offset % 1 !== 0) {
-        throw TypeError('Illegal offset: ' + offset + ' (not an integer)')
-      }
-
-      offset >>>= 0
-
-      if (offset < 0 || offset + 0 > this.buffer.byteLength) {
-        throw RangeError('Illegal offset: 0 <= ' + offset + ' (+0) <= ' + this.buffer.byteLength)
-      }
-    }
-
-    offset += 4
-
-    let capacity4 = this.buffer.byteLength
-
-    if (offset > capacity4) {
-      this.resize((capacity4 *= 2) > offset ? capacity4 : offset)
-    }
-
-    offset -= 4
-
-    this.view.setInt32(offset, value, this.littleEndian)
-
-    if (relative) {
-      this.offset += 4
-    }
-
-    return this
-  }
-
-  /**
-   * Writes a 32bit signed integer. This is an alias of {@link ByteBuffer#writeInt32}.
-   * @param {number} value Value to write
-   * @param {number=} offset Offset to write to. Will use and increase {@link ByteBuffer#offset} by `4` if omitted.
-   * @expose
-   */
-  writeInt = this.writeInt32
-
-  /**
    * Writes a 32bit unsigned integer.
    * @param {number} value Value to write
    * @param {number=} offset Offset to write to. Will use and increase {@link ByteBuffer#offset} by `4` if omitted.
@@ -740,22 +659,6 @@ export class ByteBuffer {
   }
 
   /**
-   * Makes sure that this ByteBuffer is backed by a {@link ByteBuffer#buffer} of at least the specified capacity. If the
-   *  current capacity is exceeded, it will be doubled. If double the current capacity is less than the required capacity,
-   *  the required capacity will be used instead.
-   * @param {number} capacity Required capacity
-   * @returns {!ByteBuffer} this
-   * @expose
-   */
-  ensureCapacity(capacity) {
-    let current = this.buffer.byteLength
-    if (current < capacity) {
-      return this.resize((current *= 2) > capacity ? current : capacity)
-    }
-    return this
-  }
-
-  /**
    * Makes this ByteBuffer ready for a new sequence of write or relative read operations. Sets `limit = offset` and
    *  `offset = 0`. Make sure always to flip a ByteBuffer when all relative read or write operations are complete.
    * @returns {!ByteBuffer} this
@@ -764,30 +667,6 @@ export class ByteBuffer {
   flip() {
     this.limit = this.offset
     this.offset = 0
-    return this
-  }
-
-  /**
-   * Switches (to) little endian byte order.
-   * @param {boolean=} littleEndian Defaults to `true`, otherwise uses big endian
-   * @returns {!ByteBuffer} this
-   * @expose
-   */
-  LE(littleEndian) {
-    this.littleEndian = typeof littleEndian !== 'undefined' ? !!littleEndian : true
-
-    return this
-  }
-
-  /**
-   * Switches (to) big endian byte order.
-   * @param {boolean=} bigEndian Defaults to `true`, otherwise uses little endian
-   * @returns {!ByteBuffer} this
-   * @expose
-   */
-  BE(bigEndian) {
-    this.littleEndian = typeof bigEndian !== 'undefined' ? !bigEndian : false
-
     return this
   }
 
@@ -1143,105 +1022,7 @@ export class ByteBuffer {
     }
     return offset - start
   }
-
-  readUTF8String(length, metrics, offset) {
-    if (typeof metrics === 'number') {
-      offset = metrics
-      metrics = undefined
-    }
-    const relative = typeof offset === 'undefined'
-    if (relative) offset = this.offset
-    if (typeof metrics === 'undefined') metrics = ByteBuffer.METRICS_CHARS
-    if (!this.noAssert) {
-      if (typeof length !== 'number' || length % 1 !== 0) {
-        throw TypeError('Illegal length: ' + length + ' (not an integer)')
-      }
-      length |= 0
-      if (typeof offset !== 'number' || offset % 1 !== 0) {
-        throw TypeError('Illegal offset: ' + offset + ' (not an integer)')
-      }
-      offset >>>= 0
-      if (offset < 0 || offset + 0 > this.buffer.byteLength) {
-        throw RangeError('Illegal offset: 0 <= ' + offset + ' (+' + 0 + ') <= ' + this.buffer.byteLength)
-      }
-    }
-    let i = 0
-    const start = offset
-    let sd
-    if (metrics === ByteBuffer.METRICS_CHARS) {
-      // The same for node and the browser
-      sd = stringDestination()
-      utfx.decodeUTF8(
-        function () {
-          return i < length && offset < this.limit ? this.view.getUint8(offset++) : null
-        }.bind(this),
-        function (cp) {
-          ++i
-          utfx.UTF8toUTF16(cp, sd)
-        }
-      )
-      if (i !== length) {
-        throw RangeError('Illegal range: Truncated data, ' + i + ' == ' + length)
-      }
-      if (relative) {
-        this.offset = offset
-        return sd()
-      } else {
-        return {
-          string: sd(),
-          length: offset - start
-        }
-      }
-    } else if (metrics === ByteBuffer.METRICS_BYTES) {
-      if (!this.noAssert) {
-        if (typeof offset !== 'number' || offset % 1 !== 0) {
-          throw TypeError('Illegal offset: ' + offset + ' (not an integer)')
-        }
-        offset >>>= 0
-        if (offset < 0 || offset + length > this.buffer.byteLength) {
-          throw RangeError('Illegal offset: 0 <= ' + offset + ' (+' + length + ') <= ' + this.buffer.byteLength)
-        }
-      }
-      const k = offset + length
-      utfx.decodeUTF8toUTF16(
-        function () {
-          return offset < k ? this.view.getUint8(offset++) : null
-        }.bind(this),
-        (sd = stringDestination()),
-        this.noAssert
-      )
-      if (offset !== k) {
-        throw RangeError('Illegal range: Truncated data, ' + offset + ' == ' + k)
-      }
-      if (relative) {
-        this.offset = offset
-        return sd()
-      } else {
-        return {
-          string: sd(),
-          length: offset - start
-        }
-      }
-    } else {
-      throw TypeError('Unsupported metrics: ' + metrics)
-    }
-  }
 }
-function stringDestination() {
-  const cs = []
-  const ps = []
-  return function () {
-    if (arguments.length === 0) {
-      return ps.join('') + stringFromCharCode.apply(String, cs)
-    }
-    if (cs.length + arguments.length > 1024) {
-      ps.push(stringFromCharCode.apply(String, cs))
-      cs.length = 0
-    }
-    Array.prototype.push.apply(cs, arguments)
-  }
-}
-const stringFromCharCode = String.fromCharCode
 
 function stringSource(s) {
   let i = 0
