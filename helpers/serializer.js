@@ -597,6 +597,15 @@ const TransactionSerializer = ObjectSerializer([
   ['extensions', ArraySerializer(StringSerializer)]
 ])
 
+const SignedTransactionSerializer = ObjectSerializer([
+  ['ref_block_num', UInt16Serializer],
+  ['ref_block_prefix', UInt32Serializer],
+  ['expiration', DateSerializer],
+  ['operations', ArraySerializer(OperationSerializer)],
+  ['extensions', ArraySerializer(StringSerializer)],
+  ['signatures', ArraySerializer(BinarySerializer(65))]
+])
+
 const EncryptedMemoSerializer = ObjectSerializer([
   ['from', PublicKeySerializer],
   ['to', PublicKeySerializer],
@@ -605,11 +614,22 @@ const EncryptedMemoSerializer = ObjectSerializer([
   ['encrypted', BinarySerializer()]
 ])
 
+const SignedBlockSerializer = ObjectSerializer([
+  ['previous', BinarySerializer(20)],
+  ['timestamp', DateSerializer],
+  ['witness', StringSerializer],
+  ['transaction_merkle_root', BinarySerializer(20)],
+  ['extensions', ArraySerializer(VoidSerializer)],
+  ['witness_signature', BinarySerializer(65)],
+  ['transactions', ArraySerializer(SignedTransactionSerializer)]
+])
+
 export const Serializer = {
   Array: ArraySerializer,
   Asset: AssetSerializer,
   Authority: AuthoritySerializer,
   Binary: BinarySerializer,
+  Block: SignedBlockSerializer,
   Boolean: BooleanSerializer,
   Date: DateSerializer,
   FlatMap: FlatMapSerializer,
