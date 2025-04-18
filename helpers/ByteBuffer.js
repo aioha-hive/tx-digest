@@ -88,7 +88,6 @@ export class ByteBuffer {
    * Marked offset.
    * @type {number}
    * @expose
-   * @see ByteBuffer#mark
    * @see ByteBuffer#reset
    */
   markedOffset
@@ -183,56 +182,6 @@ export class ByteBuffer {
   }
 
   /**
-   * Concatenates multiple ByteBuffers into one.
-   * @param {!Array.<!ByteBuffer|!ArrayBuffer|!Uint8Array>} buffers Buffers to concatenate
-   * @param {(string|boolean)=} encoding String encoding if `buffers` contains a string ("base64", "hex", "binary",
-   *  defaults to "utf8")
-   * @param {boolean=} littleEndian Whether to use little or big endian byte order for the resulting ByteBuffer. Defaults
-   *  to {@link ByteBuffer.DEFAULT_ENDIAN}.
-   * @param {boolean=} noAssert Whether to skip assertions of offsets and values for the resulting ByteBuffer. Defaults to
-   *  {@link ByteBuffer.DEFAULT_NOASSERT}.
-   * @returns {!ByteBuffer} Concatenated ByteBuffer
-   * @expose
-   */
-  static concat = function (buffers, littleEndian, noAssert) {
-    let capacity = 0
-    const k = buffers.length
-    let length
-
-    for (let i2 = 0, length2; i2 < k; ++i2) {
-      const buf = buffers[i2]
-      if (!(buf instanceof ByteBuffer)) {
-        buffers[i2] = ByteBuffer.wrap(buf)
-      }
-      length2 = buffers[i2].limit - buffers[i2].offset
-      if (length2 > 0) {
-        capacity += length2
-      }
-    }
-
-    if (capacity === 0) {
-      return new ByteBuffer(0, littleEndian, noAssert)
-    }
-
-    const bb = new ByteBuffer(capacity, littleEndian, noAssert)
-    let bi
-    const view = new Uint8Array(bb.buffer)
-    let i = 0
-    while (i < k) {
-      bi = buffers[i++]
-      length = bi.limit - bi.offset
-      if (length <= 0) {
-        continue
-      }
-      view.set(new Uint8Array(bi.buffer).subarray(bi.offset, bi.limit), bb.offset)
-      bb.offset += length
-    }
-    bb.limit = bb.offset
-    bb.offset = 0
-    return bb
-  }
-
-  /**
    * Gets the backing buffer type.
    * @returns {Function} `Buffer` under node.js, `ArrayBuffer` in the browser (classes)
    * @expose
@@ -294,36 +243,6 @@ export class ByteBuffer {
       throw TypeError('Illegal buffer')
     }
     return bb
-  }
-
-  /**
-   * Reads the specified number of bytes.
-   * @param {number} length Number of bytes to read
-   * @param {number=} offset Offset to read from. Will use and increase {@link ByteBuffer#offset} by `length` if omitted.
-   * @returns {!ByteBuffer}
-   * @expose
-   */
-  readBytes(length, offset) {
-    const relative = typeof offset === 'undefined'
-
-    if (relative) {
-      offset = this.offset
-    }
-
-    if (!this.noAssert) {
-      if (typeof offset !== 'number' || offset % 1 !== 0) {
-        throw TypeError('Illegal offset: ' + offset + ' (not an integer)')
-      }
-      offset >>>= 0
-      if (offset < 0 || offset + length > this.buffer.byteLength) {
-        throw RangeError('Illegal offset: 0 <= ' + offset + ' (+' + length + ') <= ' + this.buffer.byteLength)
-      }
-    }
-    const slice = this.slice(offset, offset + length)
-    if (relative) {
-      this.offset += length
-    }
-    return slice
   }
 
   /**
@@ -404,48 +323,6 @@ export class ByteBuffer {
   writeByte = this.writeInt8
 
   /**
-   * Reads an 8bit signed integer.
-   * @param {number=} offset Offset to read from. Will use and advance {@link ByteBuffer#offset} by `1` if omitted.
-   * @returns {number} Value read
-   * @expose
-   */
-  readInt8(offset) {
-    const relative = typeof offset === 'undefined'
-    if (relative) {
-      offset = this.offset
-    }
-
-    if (!this.noAssert) {
-      if (typeof offset !== 'number' || offset % 1 !== 0) {
-        throw TypeError('Illegal offset: ' + offset + ' (not an integer)')
-      }
-
-      offset >>>= 0
-
-      if (offset < 0 || offset + 1 > this.buffer.byteLength) {
-        throw RangeError('Illegal offset: 0 <= ' + offset + ' (+1) <= ' + this.buffer.byteLength)
-      }
-    }
-
-    const value = this.view.getInt8(offset)
-
-    if (relative) {
-      this.offset += 1
-    }
-
-    return value
-  }
-
-  /**
-   * Reads an 8bit signed integer. This is an alias of {@link ByteBuffer#readInt8}.
-   * @function
-   * @param {number=} offset Offset to read from. Will use and advance {@link ByteBuffer#offset} by `1` if omitted.
-   * @returns {number} Value read
-   * @expose
-   */
-  readByte = this.readInt8
-
-  /**
    * Writes an 8bit unsigned integer.
    * @param {number} value Value to write
    * @param {number=} offset Offset to write to. Will use and advance {@link ByteBuffer#offset} by `1` if omitted.
@@ -505,49 +382,6 @@ export class ByteBuffer {
    * @expose
    */
   writeUInt8 = this.writeUint8
-
-  /**
-   * Reads an 8bit unsigned integer.
-   * @param {number=} offset Offset to read from. Will use and advance {@link ByteBuffer#offset} by `1` if omitted.
-   * @returns {number} Value read
-   * @expose
-   */
-  readUint8(offset) {
-    const relative = typeof offset === 'undefined'
-
-    if (relative) {
-      offset = this.offset
-    }
-
-    if (!this.noAssert) {
-      if (typeof offset !== 'number' || offset % 1 !== 0) {
-        throw TypeError('Illegal offset: ' + offset + ' (not an integer)')
-      }
-
-      offset >>>= 0
-
-      if (offset < 0 || offset + 1 > this.buffer.byteLength) {
-        throw RangeError('Illegal offset: 0 <= ' + offset + ' (+1) <= ' + this.buffer.byteLength)
-      }
-    }
-
-    const value = this.view.getUint8(offset)
-
-    if (relative) {
-      this.offset += 1
-    }
-
-    return value
-  }
-
-  /**
-   * Reads an 8bit unsigned integer. This is an alias of {@link ByteBuffer#readUint8}.
-   * @function
-   * @param {number=} offset Offset to read from. Will use and advance {@link ByteBuffer#offset} by `1` if omitted.
-   * @returns {number} Value read
-   * @expose
-   */
-  readUInt8 = this.readUint8
 
   // types/ints/int16
 
@@ -615,53 +449,6 @@ export class ByteBuffer {
   writeShort = this.writeInt16
 
   /**
-   * Reads a 16bit signed integer.
-   * @param {number=} offset Offset to read from. Will use and advance {@link ByteBuffer#offset} by `2` if omitted.
-   * @returns {number} Value read
-   * @throws {TypeError} If `offset` is not a valid number
-   * @throws {RangeError} If `offset` is out of bounds
-   * @expose
-   */
-  readInt16(offset) {
-    const relative = typeof offset === 'undefined'
-
-    if (typeof offset === 'undefined') {
-      offset = this.offset
-    }
-
-    if (!this.noAssert) {
-      if (typeof offset !== 'number' || offset % 1 !== 0) {
-        throw TypeError('Illegal offset: ' + offset + ' (not an integer)')
-      }
-
-      offset >>>= 0
-
-      if (offset < 0 || offset + 2 > this.buffer.byteLength) {
-        throw RangeError('Illegal offset: 0 <= ' + offset + ' (+2) <= ' + this.buffer.byteLength)
-      }
-    }
-
-    const value = this.view.getInt16(offset, this.littleEndian)
-
-    if (relative) {
-      this.offset += 2
-    }
-
-    return value
-  }
-
-  /**
-   * Reads a 16bit signed integer. This is an alias of {@link ByteBuffer#readInt16}.
-   * @function
-   * @param {number=} offset Offset to read from. Will use and advance {@link ByteBuffer#offset} by `2` if omitted.
-   * @returns {number} Value read
-   * @throws {TypeError} If `offset` is not a valid number
-   * @throws {RangeError} If `offset` is out of bounds
-   * @expose
-   */
-  readShort = this.readInt16
-
-  /**
    * Writes a 16bit unsigned integer.
    * @param {number} value Value to write
    * @param {number=} offset Offset to write to. Will use and advance {@link ByteBuffer#offset} by `2` if omitted.
@@ -724,53 +511,6 @@ export class ByteBuffer {
    */
   writeUInt16 = this.writeUint16
 
-  /**
-   * Reads a 16bit unsigned integer.
-   * @param {number=} offset Offset to read from. Will use and advance {@link ByteBuffer#offset} by `2` if omitted.
-   * @returns {number} Value read
-   * @throws {TypeError} If `offset` is not a valid number
-   * @throws {RangeError} If `offset` is out of bounds
-   * @expose
-   */
-  readUint16(offset) {
-    const relative = typeof offset === 'undefined'
-
-    if (relative) {
-      offset = this.offset
-    }
-
-    if (!this.noAssert) {
-      if (typeof offset !== 'number' || offset % 1 !== 0) {
-        throw TypeError('Illegal offset: ' + offset + ' (not an integer)')
-      }
-
-      offset >>>= 0
-
-      if (offset < 0 || offset + 2 > this.buffer.byteLength) {
-        throw RangeError('Illegal offset: 0 <= ' + offset + ' (+2) <= ' + this.buffer.byteLength)
-      }
-    }
-
-    const value = this.view.getUint16(offset, this.littleEndian)
-
-    if (relative) {
-      this.offset += 2
-    }
-
-    return value
-  }
-
-  /**
-   * Reads a 16bit unsigned integer. This is an alias of {@link ByteBuffer#readUint16}.
-   * @function
-   * @param {number=} offset Offset to read from. Will use and advance {@link ByteBuffer#offset} by `2` if omitted.
-   * @returns {number} Value read
-   * @throws {TypeError} If `offset` is not a valid number
-   * @throws {RangeError} If `offset` is out of bounds
-   * @expose
-   */
-  readUInt16 = this.readUint16
-
   // types/ints/int32
 
   /**
@@ -832,48 +572,6 @@ export class ByteBuffer {
   writeInt = this.writeInt32
 
   /**
-   * Reads a 32bit signed integer.
-   * @param {number=} offset Offset to read from. Will use and increase {@link ByteBuffer#offset} by `4` if omitted.
-   * @returns {number} Value read
-   * @expose
-   */
-  readInt32(offset) {
-    const relative = typeof offset === 'undefined'
-
-    if (relative) {
-      offset = this.offset
-    }
-
-    if (!this.noAssert) {
-      if (typeof offset !== 'number' || offset % 1 !== 0) {
-        throw TypeError('Illegal offset: ' + offset + ' (not an integer)')
-      }
-
-      offset >>>= 0
-
-      if (offset < 0 || offset + 4 > this.buffer.byteLength) {
-        throw RangeError('Illegal offset: 0 <= ' + offset + ' (+4) <= ' + this.buffer.byteLength)
-      }
-    }
-
-    const value = this.view.getInt32(offset, this.littleEndian)
-
-    if (relative) {
-      this.offset += 4
-    }
-
-    return value
-  }
-
-  /**
-   * Reads a 32bit signed integer. This is an alias of {@link ByteBuffer#readInt32}.
-   * @param {number=} offset Offset to read from. Will use and advance {@link ByteBuffer#offset} by `4` if omitted.
-   * @returns {number} Value read
-   * @expose
-   */
-  readInt = this.readInt32
-
-  /**
    * Writes a 32bit unsigned integer.
    * @param {number} value Value to write
    * @param {number=} offset Offset to write to. Will use and increase {@link ByteBuffer#offset} by `4` if omitted.
@@ -932,255 +630,6 @@ export class ByteBuffer {
    * @expose
    */
   writeUInt32 = this.writeUint32
-
-  /**
-   * Reads a 32bit unsigned integer.
-   * @param {number=} offset Offset to read from. Will use and increase {@link ByteBuffer#offset} by `4` if omitted.
-   * @returns {number} Value read
-   * @expose
-   */
-  readUint32(offset) {
-    const relative = typeof offset === 'undefined'
-
-    if (relative) {
-      offset = this.offset
-    }
-
-    if (!this.noAssert) {
-      if (typeof offset !== 'number' || offset % 1 !== 0) {
-        throw TypeError('Illegal offset: ' + offset + ' (not an integer)')
-      }
-
-      offset >>>= 0
-
-      if (offset < 0 || offset + 4 > this.buffer.byteLength) {
-        throw RangeError('Illegal offset: 0 <= ' + offset + ' (+4) <= ' + this.buffer.byteLength)
-      }
-    }
-
-    const value = this.view.getUint32(offset, this.littleEndian)
-
-    if (relative) {
-      this.offset += 4
-    }
-
-    return value
-  }
-
-  /**
-   * Reads a 32bit unsigned integer. This is an alias of {@link ByteBuffer#readUint32}.
-   * @function
-   * @param {number=} offset Offset to read from. Will use and increase {@link ByteBuffer#offset} by `4` if omitted.
-   * @returns {number} Value read
-   * @expose
-   */
-  readUInt32 = this.readUint32
-
-  /**
-   * Writes a 32bit float.
-   * @param {number} value Value to write
-   * @param {number=} offset Offset to write to. Will use and increase {@link ByteBuffer#offset} by `4` if omitted.
-   * @returns {!ByteBuffer} this
-   * @expose
-   */
-  writeFloat32(value, offset) {
-    const relative = typeof offset === 'undefined'
-
-    if (relative) {
-      offset = this.offset
-    }
-
-    if (!this.noAssert) {
-      if (typeof value !== 'number') {
-        throw TypeError('Illegal value: ' + value + ' (not a number)')
-      }
-
-      if (typeof offset !== 'number' || offset % 1 !== 0) {
-        throw TypeError('Illegal offset: ' + offset + ' (not an integer)')
-      }
-
-      offset >>>= 0
-
-      if (offset < 0 || offset + 0 > this.buffer.byteLength) {
-        throw RangeError('Illegal offset: 0 <= ' + offset + ' (+0) <= ' + this.buffer.byteLength)
-      }
-    }
-
-    offset += 4
-
-    let capacity8 = this.buffer.byteLength
-
-    if (offset > capacity8) {
-      this.resize((capacity8 *= 2) > offset ? capacity8 : offset)
-    }
-
-    offset -= 4
-
-    this.view.setFloat32(offset, value, this.littleEndian)
-
-    if (relative) {
-      this.offset += 4
-    }
-
-    return this
-  }
-
-  /**
-   * Writes a 32bit float. This is an alias of {@link ByteBuffer#writeFloat32}.
-   * @function
-   * @param {number} value Value to write
-   * @param {number=} offset Offset to write to. Will use and increase {@link ByteBuffer#offset} by `4` if omitted.
-   * @returns {!ByteBuffer} this
-   * @expose
-   */
-  writeFloat = this.writeFloat32
-
-  /**
-   * Reads a 32bit float.
-   * @param {number=} offset Offset to read from. Will use and increase {@link ByteBuffer#offset} by `4` if omitted.
-   * @returns {number}
-   * @expose
-   */
-  readFloat32(offset) {
-    const relative = typeof offset === 'undefined'
-
-    if (relative) {
-      offset = this.offset
-    }
-
-    if (!this.noAssert) {
-      if (typeof offset !== 'number' || offset % 1 !== 0) {
-        throw TypeError('Illegal offset: ' + offset + ' (not an integer)')
-      }
-
-      offset >>>= 0
-
-      if (offset < 0 || offset + 4 > this.buffer.byteLength) {
-        throw RangeError('Illegal offset: 0 <= ' + offset + ' (+4) <= ' + this.buffer.byteLength)
-      }
-    }
-
-    const value = this.view.getFloat32(offset, this.littleEndian)
-
-    if (relative) {
-      this.offset += 4
-    }
-
-    return value
-  }
-
-  /**
-   * Reads a 32bit float. This is an alias of {@link ByteBuffer#readFloat32}.
-   * @function
-   * @param {number=} offset Offset to read from. Will use and increase {@link ByteBuffer#offset} by `4` if omitted.
-   * @returns {number}
-   * @expose
-   */
-  readFloat = this.readFloat32
-
-  // types/floats/float64
-
-  /**
-   * Writes a 64bit float.
-   * @param {number} value Value to write
-   * @param {number=} offset Offset to write to. Will use and increase {@link ByteBuffer#offset} by `8` if omitted.
-   * @returns {!ByteBuffer} this
-   * @expose
-   */
-  writeFloat64(value, offset) {
-    const relative = typeof offset === 'undefined'
-
-    if (relative) {
-      offset = this.offset
-    }
-
-    if (!this.noAssert) {
-      if (typeof value !== 'number') {
-        throw TypeError('Illegal value: ' + value + ' (not a number)')
-      }
-
-      if (typeof offset !== 'number' || offset % 1 !== 0) {
-        throw TypeError('Illegal offset: ' + offset + ' (not an integer)')
-      }
-
-      offset >>>= 0
-
-      if (offset < 0 || offset + 0 > this.buffer.byteLength) {
-        throw RangeError('Illegal offset: 0 <= ' + offset + ' (+0) <= ' + this.buffer.byteLength)
-      }
-    }
-
-    offset += 8
-
-    let capacity9 = this.buffer.byteLength
-
-    if (offset > capacity9) {
-      this.resize((capacity9 *= 2) > offset ? capacity9 : offset)
-    }
-
-    offset -= 8
-
-    this.view.setFloat64(offset, value, this.littleEndian)
-
-    if (relative) {
-      this.offset += 8
-    }
-
-    return this
-  }
-
-  /**
-   * Writes a 64bit float. This is an alias of {@link ByteBuffer#writeFloat64}.
-   * @function
-   * @param {number} value Value to write
-   * @param {number=} offset Offset to write to. Will use and increase {@link ByteBuffer#offset} by `8` if omitted.
-   * @returns {!ByteBuffer} this
-   * @expose
-   */
-  writeDouble = this.writeFloat64
-
-  /**
-   * Reads a 64bit float.
-   * @param {number=} offset Offset to read from. Will use and increase {@link ByteBuffer#offset} by `8` if omitted.
-   * @returns {number}
-   * @expose
-   */
-  readFloat64(offset) {
-    const relative = typeof offset === 'undefined'
-
-    if (relative) {
-      offset = this.offset
-    }
-
-    if (!this.noAssert) {
-      if (typeof offset !== 'number' || offset % 1 !== 0) {
-        throw TypeError('Illegal offset: ' + offset + ' (not an integer)')
-      }
-
-      offset >>>= 0
-
-      if (offset < 0 || offset + 8 > this.buffer.byteLength) {
-        throw RangeError('Illegal offset: 0 <= ' + offset + ' (+8) <= ' + this.buffer.byteLength)
-      }
-    }
-
-    const value = this.view.getFloat64(offset, this.littleEndian)
-
-    if (relative) {
-      this.offset += 8
-    }
-
-    return value
-  }
-
-  /**
-   * Reads a 64bit float. This is an alias of {@link ByteBuffer#readFloat64}.
-   * @function
-   * @param {number=} offset Offset to read from. Will use and increase {@link ByteBuffer#offset} by `8` if omitted.
-   * @returns {number}
-   * @expose
-   */
-  readDouble = this.readFloat64
 
   /**
    * Appends some data to this ByteBuffer. This will overwrite any contents behind the specified offset up to the appended
@@ -1246,21 +695,6 @@ export class ByteBuffer {
   }
 
   /**
-   * Appends this ByteBuffer's contents to another ByteBuffer. This will overwrite any contents at and after the
-   *  specified offset up to the length of this ByteBuffer's data.
-   * @param {!ByteBuffer} target Target ByteBuffer
-   * @param {number=} offset Offset to append to. Will use and increase {@link ByteBuffer#offset} by the number of bytes
-   *  read if omitted.
-   * @returns {!ByteBuffer} this
-   * @expose
-   * @see ByteBuffer#append
-   */
-  appendTo(target, offset) {
-    target.append(this, offset)
-    return this
-  }
-
-  /**
    * Enables or disables assertions of argument types and offsets. Assertions are enabled by default but you can opt to
    *  disable them if your code already makes sure that everything is valid.
    * @param {boolean} assert `true` to enable assertions, otherwise `false`
@@ -1279,19 +713,6 @@ export class ByteBuffer {
    */
   capacity() {
     return this.buffer.byteLength
-  }
-
-  /**
-   * Clears this ByteBuffer's offsets by setting {@link ByteBuffer#offset} to `0` and {@link ByteBuffer#limit} to the
-   *  backing buffer's capacity. Discards {@link ByteBuffer#markedOffset}.
-   * @returns {!ByteBuffer} this
-   * @expose
-   */
-  clear() {
-    this.offset = 0
-    this.limit = this.buffer.byteLength
-    this.markedOffset = -1
-    return this
   }
 
   /**
@@ -1319,175 +740,6 @@ export class ByteBuffer {
   }
 
   /**
-   * Compacts this ByteBuffer to be backed by a {@link ByteBuffer#buffer} of its contents' length. Contents are the bytes
-   *  between {@link ByteBuffer#offset} and {@link ByteBuffer#limit}. Will set `offset = 0` and `limit = capacity` and
-   *  adapt {@link ByteBuffer#markedOffset} to the same relative position if set.
-   * @param {number=} begin Offset to start at, defaults to {@link ByteBuffer#offset}
-   * @param {number=} end Offset to end at, defaults to {@link ByteBuffer#limit}
-   * @returns {!ByteBuffer} this
-   * @expose
-   */
-  compact(begin, end) {
-    if (typeof begin === 'undefined') {
-      begin = this.offset
-    }
-
-    if (typeof end === 'undefined') {
-      end = this.limit
-    }
-
-    if (!this.noAssert) {
-      if (typeof begin !== 'number' || begin % 1 !== 0) {
-        throw TypeError('Illegal begin: Not an integer')
-      }
-
-      begin >>>= 0
-
-      if (typeof end !== 'number' || end % 1 !== 0) {
-        throw TypeError('Illegal end: Not an integer')
-      }
-
-      end >>>= 0
-
-      if (begin < 0 || begin > end || end > this.buffer.byteLength) {
-        throw RangeError('Illegal range: 0 <= ' + begin + ' <= ' + end + ' <= ' + this.buffer.byteLength)
-      }
-    }
-
-    if (begin === 0 && end === this.buffer.byteLength) {
-      return this
-    }
-
-    const len = end - begin
-    if (len === 0) {
-      this.buffer = EMPTY_BUFFER
-      this.view = new DataView(EMPTY_BUFFER)
-      if (this.markedOffset >= 0) {
-        this.markedOffset -= begin
-      }
-      this.offset = 0
-      this.limit = 0
-      return this
-    }
-
-    const buffer = new ArrayBuffer(len)
-    new Uint8Array(buffer).set(new Uint8Array(this.buffer).subarray(begin, end))
-    this.buffer = buffer
-    this.view = new DataView(buffer)
-    if (this.markedOffset >= 0) {
-      this.markedOffset -= begin
-    }
-    this.offset = 0
-    this.limit = len
-    return this
-  }
-
-  /**
-   * Creates a copy of this ByteBuffer's contents. Contents are the bytes between {@link ByteBuffer#offset} and
-   *  {@link ByteBuffer#limit}.
-   * @param {number=} begin Begin offset, defaults to {@link ByteBuffer#offset}.
-   * @param {number=} end End offset, defaults to {@link ByteBuffer#limit}.
-   * @returns {!ByteBuffer} Copy
-   * @expose
-   */
-  copy(begin, end) {
-    if (typeof begin === 'undefined') {
-      begin = this.offset
-    }
-
-    if (typeof end === 'undefined') {
-      end = this.limit
-    }
-
-    if (!this.noAssert) {
-      if (typeof begin !== 'number' || begin % 1 !== 0) {
-        throw TypeError('Illegal begin: Not an integer')
-      }
-
-      begin >>>= 0
-
-      if (typeof end !== 'number' || end % 1 !== 0) {
-        throw TypeError('Illegal end: Not an integer')
-      }
-
-      end >>>= 0
-
-      if (begin < 0 || begin > end || end > this.buffer.byteLength) {
-        throw RangeError('Illegal range: 0 <= ' + begin + ' <= ' + end + ' <= ' + this.buffer.byteLength)
-      }
-    }
-
-    if (begin === end) {
-      return new ByteBuffer(0, this.littleEndian, this.noAssert)
-    }
-
-    const capacity = end - begin
-    const bb = new ByteBuffer(capacity, this.littleEndian, this.noAssert)
-    bb.offset = 0
-    bb.limit = capacity
-    if (bb.markedOffset >= 0) {
-      bb.markedOffset -= begin
-    }
-    this.copyTo(bb, 0, begin, end)
-    return bb
-  }
-
-  /**
-   * Copies this ByteBuffer's contents to another ByteBuffer. Contents are the bytes between {@link ByteBuffer#offset} and
-   *  {@link ByteBuffer#limit}.
-   * @param {!ByteBuffer} target Target ByteBuffer
-   * @param {number=} targetOffset Offset to copy to. Will use and increase the target's {@link ByteBuffer#offset}
-   *  by the number of bytes copied if omitted.
-   * @param {number=} sourceOffset Offset to start copying from. Will use and increase {@link ByteBuffer#offset} by the
-   *  number of bytes copied if omitted.
-   * @param {number=} sourceLimit Offset to end copying from, defaults to {@link ByteBuffer#limit}
-   * @returns {!ByteBuffer} this
-   * @expose
-   */
-  copyTo(target, targetOffset, sourceOffset, sourceLimit) {
-    const targetRelative = typeof targetOffset === 'undefined'
-    const relative = typeof sourceOffset === 'undefined'
-
-    if (!this.noAssert) {
-      if (!(target instanceof ByteBuffer)) {
-        throw TypeError('Illegal target: Not a ByteBuffer')
-      }
-    }
-
-    targetOffset = targetRelative ? target.offset : targetOffset | 0
-    sourceOffset = relative ? this.offset : sourceOffset | 0
-    sourceLimit = typeof sourceLimit === 'undefined' ? this.limit : sourceLimit | 0
-
-    if (targetOffset < 0 || targetOffset > target.buffer.byteLength) {
-      throw RangeError('Illegal target range: 0 <= ' + targetOffset + ' <= ' + target.buffer.byteLength)
-    }
-
-    if (sourceOffset < 0 || sourceLimit > this.buffer.byteLength) {
-      throw RangeError('Illegal source range: 0 <= ' + sourceOffset + ' <= ' + this.buffer.byteLength)
-    }
-
-    const len = sourceLimit - sourceOffset
-
-    if (len === 0) {
-      return target
-    }
-
-    target.ensureCapacity(targetOffset + len)
-
-    new Uint8Array(target.buffer).set(new Uint8Array(this.buffer).subarray(sourceOffset, sourceLimit), targetOffset)
-
-    if (relative) {
-      this.offset += len
-    }
-
-    if (targetRelative) {
-      target.offset += len
-    }
-
-    return this
-  }
-
-  /**
    * Makes sure that this ByteBuffer is backed by a {@link ByteBuffer#buffer} of at least the specified capacity. If the
    *  current capacity is exceeded, it will be doubled. If double the current capacity is less than the required capacity,
    *  the required capacity will be used instead.
@@ -1504,75 +756,6 @@ export class ByteBuffer {
   }
 
   /**
-   * Overwrites this ByteBuffer's contents with the specified value. Contents are the bytes between
-   *  {@link ByteBuffer#offset} and {@link ByteBuffer#limit}.
-   * @param {number|string} value Byte value to fill with. If given as a string, the first character is used.
-   * @param {number=} begin Begin offset. Will use and increase {@link ByteBuffer#offset} by the number of bytes
-   *  written if omitted. defaults to {@link ByteBuffer#offset}.
-   * @param {number=} end End offset, defaults to {@link ByteBuffer#limit}.
-   * @returns {!ByteBuffer} this
-   * @expose
-   * @example `someByteBuffer.clear().fill(0)` fills the entire backing buffer with zeroes
-   */
-  fill(value, begin, end) {
-    const relative = typeof begin === 'undefined'
-
-    if (relative) {
-      begin = this.offset
-    }
-
-    if (typeof value === 'string' && value.length > 0) {
-      value = value.charCodeAt(0)
-    }
-
-    if (typeof begin === 'undefined') {
-      begin = this.offset
-    }
-
-    if (typeof end === 'undefined') {
-      end = this.limit
-    }
-
-    if (!this.noAssert) {
-      if (typeof value !== 'number' || value % 1 !== 0) {
-        throw TypeError('Illegal value: ' + value + ' (not an integer)')
-      }
-
-      value |= 0
-
-      if (typeof begin !== 'number' || begin % 1 !== 0) {
-        throw TypeError('Illegal begin: Not an integer')
-      }
-
-      begin >>>= 0
-
-      if (typeof end !== 'number' || end % 1 !== 0) {
-        throw TypeError('Illegal end: Not an integer')
-      }
-
-      end >>>= 0
-
-      if (begin < 0 || begin > end || end > this.buffer.byteLength) {
-        throw RangeError('Illegal range: 0 <= ' + begin + ' <= ' + end + ' <= ' + this.buffer.byteLength)
-      }
-    }
-
-    if (begin >= end) {
-      return this
-    }
-
-    while (begin < end) {
-      this.view.setUint8(begin++, value)
-    }
-
-    if (relative) {
-      this.offset = begin
-    }
-
-    return this
-  }
-
-  /**
    * Makes this ByteBuffer ready for a new sequence of write or relative read operations. Sets `limit = offset` and
    *  `offset = 0`. Make sure always to flip a ByteBuffer when all relative read or write operations are complete.
    * @returns {!ByteBuffer} this
@@ -1581,52 +764,6 @@ export class ByteBuffer {
   flip() {
     this.limit = this.offset
     this.offset = 0
-    return this
-  }
-
-  /**
-   * Marks an offset on this ByteBuffer to be used later.
-   * @param {number=} offset Offset to mark. Defaults to {@link ByteBuffer#offset}.
-   * @returns {!ByteBuffer} this
-   * @throws {TypeError} If `offset` is not a valid number
-   * @throws {RangeError} If `offset` is out of bounds
-   * @see ByteBuffer#reset
-   * @expose
-   */
-  mark(offset) {
-    offset = typeof offset === 'undefined' ? this.offset : offset
-
-    if (!this.noAssert) {
-      if (typeof offset !== 'number' || offset % 1 !== 0) {
-        throw TypeError('Illegal offset: ' + offset + ' (not an integer)')
-      }
-
-      offset >>>= 0
-
-      if (offset < 0 || offset + 0 > this.buffer.byteLength) {
-        throw RangeError('Illegal offset: 0 <= ' + offset + ' (+0) <= ' + this.buffer.byteLength)
-      }
-    }
-
-    this.markedOffset = offset
-
-    return this
-  }
-
-  /**
-   * Sets the byte order.
-   * @param {boolean} littleEndian `true` for little endian byte order, `false` for big endian
-   * @returns {!ByteBuffer} this
-   * @expose
-   */
-  order(littleEndian) {
-    if (!this.noAssert) {
-      if (typeof littleEndian !== 'boolean') {
-        throw TypeError('Illegal littleEndian: Not a boolean')
-      }
-    }
-
-    this.littleEndian = !!littleEndian
     return this
   }
 
@@ -1650,118 +787,6 @@ export class ByteBuffer {
    */
   BE(bigEndian) {
     this.littleEndian = typeof bigEndian !== 'undefined' ? !bigEndian : false
-
-    return this
-  }
-
-  /**
-   * Prepends some data to this ByteBuffer. This will overwrite any contents before the specified offset up to the
-   *  prepended data's length. If there is not enough space available before the specified `offset`, the backing buffer
-   *  will be resized and its contents moved accordingly.
-   * @param {!ByteBuffer|!ArrayBuffer} source Data to prepend. If `source` is a ByteBuffer, its offset will be
-   *  modified according to the performed read operation.
-   * @param {(string|number)=} encoding Encoding if `data` is a string ("base64", "hex", "binary", defaults to "utf8")
-   * @param {number=} offset Offset to prepend at. Will use and decrease {@link ByteBuffer#offset} by the number of bytes
-   *  prepended if omitted.
-   * @returns {!ByteBuffer} this
-   * @expose
-   * @example A relative `00<01 02 03>.prepend(<04 05>)` results in `<04 05 01 02 03>, 04 05|`
-   * @example An absolute `00<01 02 03>.prepend(<04 05>, 2)` results in `04<05 02 03>, 04 05|`
-   */
-  prepend(source, offset) {
-    const relative = typeof offset === 'undefined'
-
-    if (relative) {
-      offset = this.offset
-    }
-
-    if (!this.noAssert) {
-      if (typeof offset !== 'number' || offset % 1 !== 0) {
-        throw TypeError('Illegal offset: ' + offset + ' (not an integer)')
-      }
-
-      offset >>>= 0
-
-      if (offset < 0 || offset + 0 > this.buffer.byteLength) {
-        throw RangeError('Illegal offset: 0 <= ' + offset + ' (+0) <= ' + this.buffer.byteLength)
-      }
-    }
-
-    if (!(source instanceof ByteBuffer)) {
-      source = ByteBuffer.wrap(source)
-    }
-
-    const len = source.limit - source.offset
-    if (len <= 0) {
-      return this
-    }
-
-    const diff = len - offset
-    if (diff > 0) {
-      const buffer = new ArrayBuffer(this.buffer.byteLength + diff)
-      const arrayView = new Uint8Array(buffer)
-      arrayView.set(new Uint8Array(this.buffer).subarray(offset, this.buffer.byteLength), len)
-      this.buffer = buffer
-      this.view = new DataView(buffer)
-      this.offset += diff
-      if (this.markedOffset >= 0) {
-        this.markedOffset += diff
-      }
-      this.limit += diff
-      offset += diff
-    } else {
-      const arrayView = new Uint8Array(this.buffer)
-      arrayView.set(new Uint8Array(source.buffer).subarray(source.offset, source.limit), offset - len)
-    }
-    source.offset = source.limit
-    if (relative) {
-      this.offset -= len
-    }
-    return this
-  }
-
-  /**
-   * Prepends this ByteBuffer to another ByteBuffer. This will overwrite any contents before the specified offset up to the
-   *  prepended data's length. If there is not enough space available before the specified `offset`, the backing buffer
-   *  will be resized and its contents moved accordingly.
-   * @param {!ByteBuffer} target Target ByteBuffer
-   * @param {number=} offset Offset to prepend at. Will use and decrease {@link ByteBuffer#offset} by the number of bytes
-   *  prepended if omitted.
-   * @returns {!ByteBuffer} this
-   * @expose
-   * @see ByteBuffer#prepend
-   */
-  prependTo(target, offset) {
-    target.prepend(this, offset)
-    return this
-  }
-
-  /**
-   * Gets the number of remaining readable bytes. Contents are the bytes between {@link ByteBuffer#offset} and
-   *  {@link ByteBuffer#limit}, so this returns `limit - offset`.
-   * @returns {number} Remaining readable bytes. May be negative if `offset > limit`.
-   * @expose
-   */
-  remaining() {
-    return this.limit - this.offset
-  }
-
-  /**
-   * Resets this ByteBuffer's {@link ByteBuffer#offset}. If an offset has been marked through {@link ByteBuffer#mark}
-   *  before, `offset` will be set to {@link ByteBuffer#markedOffset}, which will then be discarded. If no offset has been
-   *  marked, sets `offset = 0`.
-   * @returns {!ByteBuffer} this
-   * @see ByteBuffer#mark
-   * @expose
-   */
-  reset() {
-    if (this.markedOffset >= 0) {
-      this.offset = this.markedOffset
-
-      this.markedOffset = -1
-    } else {
-      this.offset = 0
-    }
 
     return this
   }
@@ -1798,75 +823,6 @@ export class ByteBuffer {
       this.view = new DataView(buffer)
     }
 
-    return this
-  }
-
-  /**
-   * Reverses this ByteBuffer's contents.
-   * @param {number=} begin Offset to start at, defaults to {@link ByteBuffer#offset}
-   * @param {number=} end Offset to end at, defaults to {@link ByteBuffer#limit}
-   * @returns {!ByteBuffer} this
-   * @expose
-   */
-  reverse(begin, end) {
-    if (typeof begin === 'undefined') {
-      begin = this.offset
-    }
-
-    if (typeof end === 'undefined') {
-      end = this.limit
-    }
-
-    if (!this.noAssert) {
-      if (typeof begin !== 'number' || begin % 1 !== 0) {
-        throw TypeError('Illegal begin: Not an integer')
-      }
-
-      begin >>>= 0
-
-      if (typeof end !== 'number' || end % 1 !== 0) {
-        throw TypeError('Illegal end: Not an integer')
-      }
-
-      end >>>= 0
-
-      if (begin < 0 || begin > end || end > this.buffer.byteLength) {
-        throw RangeError('Illegal range: 0 <= ' + begin + ' <= ' + end + ' <= ' + this.buffer.byteLength)
-      }
-    }
-
-    if (begin === end) {
-      return this
-    }
-
-    Array.prototype.reverse.call(new Uint8Array(this.buffer).subarray(begin, end))
-    this.view = new DataView(this.buffer)
-    return this
-  }
-
-  /**
-   * Skips the next `length` bytes. This will just advance
-   * @param {number} length Number of bytes to skip. May also be negative to move the offset back.
-   * @returns {!ByteBuffer} this
-   * @expose
-   */
-  skip(length) {
-    if (!this.noAssert) {
-      if (typeof length !== 'number' || length % 1 !== 0) {
-        throw TypeError('Illegal length: ' + length + ' (not an integer)')
-      }
-      length |= 0
-    }
-
-    const offset = this.offset + length
-
-    if (!this.noAssert) {
-      if (offset < 0 || offset > this.buffer.byteLength) {
-        throw RangeError('Illegal length: 0 <= ' + this.offset + ' + ' + length + ' <= ' + this.buffer.byteLength)
-      }
-    }
-
-    this.offset = offset
     return this
   }
 
@@ -1976,48 +932,6 @@ export class ByteBuffer {
   writeLong = this.writeInt64
 
   /**
-   * Reads a 64bit signed integer.
-   * @param {number=} offset Offset to read from. Will use and increase {@link ByteBuffer#offset} by `8` if omitted.
-   * @returns {!bigint}
-   * @expose
-   */
-  readInt64(offset) {
-    const relative = typeof offset === 'undefined'
-
-    if (relative) {
-      offset = this.offset
-    }
-
-    if (!this.noAssert) {
-      if (typeof offset !== 'number' || offset % 1 !== 0) {
-        throw TypeError('Illegal offset: ' + offset + ' (not an integer)')
-      }
-
-      offset >>>= 0
-
-      if (offset < 0 || offset + 8 > this.buffer.byteLength) {
-        throw RangeError('Illegal offset: 0 <= ' + offset + ' (+8) <= ' + this.buffer.byteLength)
-      }
-    }
-
-    const value = this.view.getBigInt64(offset, this.littleEndian)
-
-    if (relative) {
-      this.offset += 8
-    }
-
-    return value
-  }
-
-  /**
-   * Reads a 64bit signed integer. This is an alias of {@link ByteBuffer#readInt64}.
-   * @param {number=} offset Offset to read from. Will use and increase {@link ByteBuffer#offset} by `8` if omitted.
-   * @returns {!bigint}
-   * @expose
-   */
-  readLong = this.readInt64
-
-  /**
    * Writes a 64bit unsigned integer.
    * @param {number|!bigint} value Value to write
    * @param {number=} offset Offset to write to. Will use and increase {@link ByteBuffer#offset} by `8` if omitted.
@@ -2079,49 +993,6 @@ export class ByteBuffer {
    * @expose
    */
   writeUInt64 = this.writeUint64
-
-  /**
-   * Reads a 64bit unsigned integer.
-   * @param {number=} offset Offset to read from. Will use and increase {@link ByteBuffer#offset} by `8` if omitted.
-   * @returns {!bigint}
-   * @expose
-   */
-  readUint64(offset) {
-    const relative = typeof offset === 'undefined'
-
-    if (relative) {
-      offset = this.offset
-    }
-
-    if (!this.noAssert) {
-      if (typeof offset !== 'number' || offset % 1 !== 0) {
-        throw TypeError('Illegal offset: ' + offset + ' (not an integer)')
-      }
-
-      offset >>>= 0
-
-      if (offset < 0 || offset + 8 > this.buffer.byteLength) {
-        throw RangeError('Illegal offset: 0 <= ' + offset + ' (+8) <= ' + this.buffer.byteLength)
-      }
-    }
-
-    const value = this.view.getBigUint64(offset, this.littleEndian)
-
-    if (relative) {
-      this.offset += 8
-    }
-
-    return value
-  }
-
-  /**
-   * Reads a 64bit unsigned integer. This is an alias of {@link ByteBuffer#readUint64}.
-   * @function
-   * @param {number=} offset Offset to read from. Will use and increase {@link ByteBuffer#offset} by `8` if omitted.
-   * @returns {!Long}
-   * @expose
-   */
-  readUInt64 = this.readUint64
 
   /**
    * Returns a copy of the backing buffer that contains this ByteBuffer's contents. Contents are the bytes between
@@ -2222,44 +1093,6 @@ export class ByteBuffer {
     return size
   }
 
-  readVarint32 = function (offset) {
-    const relative = typeof offset === 'undefined'
-    if (relative) offset = this.offset
-    if (!this.noAssert) {
-      if (typeof offset !== 'number' || offset % 1 !== 0) {
-        throw TypeError('Illegal offset: ' + offset + ' (not an integer)')
-      }
-      offset >>>= 0
-      if (offset < 0 || offset + 1 > this.buffer.byteLength) {
-        throw RangeError('Illegal offset: 0 <= ' + offset + ' (+' + 1 + ') <= ' + this.buffer.byteLength)
-      }
-    }
-    let c = 0
-    let value = 0 >>> 0
-    let b
-    do {
-      if (!this.noAssert && offset > this.limit) {
-        const err = Error('Truncated')
-        err.truncated = true
-        throw err
-      }
-      b = this.view.getUint8(offset++)
-      if (c < 5) {
-        value |= (b & 0x7f) << (7 * c)
-      }
-      ++c
-    } while ((b & 0x80) !== 0)
-    value |= 0
-    if (relative) {
-      this.offset = offset
-      return value
-    }
-    return {
-      value,
-      length: c
-    }
-  }
-
   calculateVarint32(value) {
     // ref: src/google/protobuf/io/coded_stream.cc
     value = value >>> 0
@@ -2309,33 +1142,6 @@ export class ByteBuffer {
       return this
     }
     return offset - start
-  }
-
-  readVString(offset) {
-    const relative = typeof offset === 'undefined'
-    if (relative) offset = this.offset
-    if (!this.noAssert) {
-      if (typeof offset !== 'number' || offset % 1 !== 0) {
-        throw TypeError('Illegal offset: ' + offset + ' (not an integer)')
-      }
-      offset >>>= 0
-      if (offset < 0 || offset + 1 > this.buffer.byteLength) {
-        throw RangeError('Illegal offset: 0 <= ' + offset + ' (+' + 1 + ') <= ' + this.buffer.byteLength)
-      }
-    }
-    const start = offset
-    const len = this.readVarint32(offset)
-    const str = this.readUTF8String(len.value, ByteBuffer.METRICS_BYTES, (offset += len.length))
-    offset += str.length
-    if (relative) {
-      this.offset = offset
-      return str.string
-    } else {
-      return {
-        string: str.string,
-        length: offset - start
-      }
-    }
   }
 
   readUTF8String(length, metrics, offset) {
