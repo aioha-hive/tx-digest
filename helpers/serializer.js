@@ -87,10 +87,7 @@ const AssetSerializer = (buffer, data) => {
   const asset = Asset.from(data)
   const precision = asset.getPrecision()
   buffer.writeInt64(Math.round(asset.amount * Math.pow(10, precision)))
-  buffer.writeUint8(precision)
-  for (let i = 0; i < 7; i++) {
-    buffer.writeUint8(asset.symbol.charCodeAt(i) || 0)
-  }
+  buffer.writeUint32(asset.serializeNAI())
 }
 
 const DateSerializer = (buffer, data) => {

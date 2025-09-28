@@ -4,7 +4,7 @@ export class Asset {
   /** Create a new Asset instance from a string, e.g. `42.000 HIVE`. */
   static fromString(string, expectedSymbol = null) {
     const [amountString, symbol] = string.split(' ')
-    if (['STEEM', 'VESTS', 'SBD', 'TESTS', 'TBD', 'HIVE', 'HBD'].indexOf(symbol) === -1) {
+    if (['VESTS', 'TESTS', 'TBD', 'HIVE', 'HBD'].indexOf(symbol) === -1) {
       throw new Error(`Invalid asset symbol: ${symbol}`)
     }
     if (expectedSymbol && symbol !== expectedSymbol) {
@@ -29,7 +29,7 @@ export class Asset {
       }
       return value
     } else if (typeof value === 'number' && Number.isFinite(value)) {
-      return new Asset(value, symbol || 'STEEM')
+      return new Asset(value, symbol || 'HIVE')
     } else if (typeof value === 'string') {
       return Asset.fromString(value, symbol)
     } else {
@@ -37,10 +37,9 @@ export class Asset {
     }
   }
 
-  // We convert HIVE & HBD strings to STEEM & SBD because the serialization should be based on STEEM & SBD
   constructor(amount, symbol) {
     this.amount = amount
-    this.symbol = symbol === 'HIVE' ? 'STEEM' : symbol === 'HBD' ? 'SBD' : symbol
+    this.symbol = symbol
   }
 
   /** Return asset precision. */
@@ -48,13 +47,26 @@ export class Asset {
     switch (this.symbol) {
       case 'TESTS':
       case 'TBD':
-      case 'STEEM':
-      case 'SBD':
       case 'HBD':
       case 'HIVE':
         return 3
       case 'VESTS':
         return 6
+    }
+  }
+
+  serializeNAI() {
+    switch (this.symbol) {
+      case 'TESTS':
+      case 'HIVE':
+        return 3200000035 // ((99999999+2) << 5) | 3
+      case 'TBD':
+      case 'HBD':
+        return 3200000003 // ((99999999+1) << 5) | 3
+      case 'VESTS':
+        return 3200000070 // ((99999999+3) << 5) | 6
+      default:
+        return 0
     }
   }
 

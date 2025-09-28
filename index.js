@@ -1,7 +1,7 @@
 import { ByteBuffer } from './helpers/ByteBuffer.js'
 import { Serializer } from './helpers/serializer.js'
 import { hexToUint8Array, uint8ArrayToHex } from './helpers/uint8Array.js'
-// import { sha256 } from '@noble/hashes/sha256'
+// import { sha256 } from '@noble/hashes/sha2'
 
 export const sha256 = async (message) => {
   const hashBuffer = await window.crypto.subtle.digest('SHA-256', message)
@@ -20,7 +20,8 @@ export const transactionDigest = async (transaction, chainId = CHAIN_ID) => {
   }
   buffer.flip()
   const transactionData = new Uint8Array(buffer.toBuffer())
+  const bin = new Uint8Array([...chainId, ...transactionData])
   const txId = uint8ArrayToHex(await sha256(transactionData)).slice(0, 40)
-  const digest = await sha256(new Uint8Array([...chainId, ...transactionData]))
-  return { digest, txId }
+  const digest = await sha256(bin)
+  return { digest, txId, bin }
 }
