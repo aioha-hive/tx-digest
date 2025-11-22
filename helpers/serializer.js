@@ -3,7 +3,8 @@ import { HexBuffer } from './HexBuffer.js'
 
 const Extensions = {
   comment_payout_beneficiaries: 0,
-  update_proposal_end_date: 1
+  update_proposal_end_date: 1,
+  recurrent_transfer_pair_id: 1
 }
 
 const NaiUint32 = (nai) => {
@@ -369,14 +370,14 @@ OperationSerializers.escrow_release_operation = OperationDataSerializer(29, [
 OperationSerializers.escrow_transfer_operation = OperationDataSerializer(27, [
   ['from', StringSerializer],
   ['to', StringSerializer],
-  ['agent', StringSerializer],
-  ['escrow_id', UInt32Serializer],
   ['hbd_amount', AssetSerializer],
   ['hive_amount', AssetSerializer],
+  ['escrow_id', UInt32Serializer],
+  ['agent', StringSerializer],
   ['fee', AssetSerializer],
+  ['json_meta', StringSerializer],
   ['ratification_deadline', DateSerializer],
-  ['escrow_expiration', DateSerializer],
-  ['json_meta', StringSerializer]
+  ['escrow_expiration', DateSerializer]
 ])
 
 OperationSerializers.feed_publish_operation = OperationDataSerializer(7, [
@@ -559,7 +560,7 @@ OperationSerializers.recurrent_transfer_operation = OperationDataSerializer(49, 
   ['memo', StringSerializer],
   ['recurrence', UInt16Serializer],
   ['executions', UInt16Serializer],
-  ['extensions', ArraySerializer(VoidSerializer)]
+  ['extensions', ArraySerializer(ExtensionSerializer(ObjectSerializer([['pair_id', UInt8Serializer]])))]
 ])
 
 const OperationSerializer = (buffer, operation) => {

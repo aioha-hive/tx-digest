@@ -4,4 +4,5 @@ export const transactionDigest: (
 ) => Promise<{
   digest: Uint8Array
   txId: string
+  bin: Uint8Array<ArrayBuffer>
 }>
