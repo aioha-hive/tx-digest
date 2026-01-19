@@ -11,6 +11,7 @@ export const sha256 = async (message) => {
 const CHAIN_ID = hexToUint8Array('beeab0de00000000000000000000000000000000000000000000000000000000')
 
 export const transactionDigest = async (transaction, chainId = CHAIN_ID) => {
+  if (typeof chainId === 'string') chainId = hexToUint8Array(chainId)
   const buffer = new ByteBuffer(ByteBuffer.DEFAULT_CAPACITY, ByteBuffer.LITTLE_ENDIAN)
   const temp = { ...transaction }
   try {
