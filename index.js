@@ -1,16 +1,15 @@
 import { ByteBuffer } from './helpers/ByteBuffer.js'
 import { Serializer } from './helpers/serializer.js'
 import { hexToUint8Array, uint8ArrayToHex } from './helpers/uint8Array.js'
-// import { sha256 } from '@noble/hashes/sha2'
 
-export const sha256 = async (message) => {
+export const sha256Browser = async (message) => {
   const hashBuffer = await window.crypto.subtle.digest('SHA-256', message)
   return new Uint8Array(hashBuffer)
 }
 
-const CHAIN_ID = hexToUint8Array('beeab0de00000000000000000000000000000000000000000000000000000000')
+export const MAINNET_CHAIN_ID = hexToUint8Array('beeab0de00000000000000000000000000000000000000000000000000000000')
 
-export const transactionDigest = async (transaction, chainId = CHAIN_ID) => {
+export const transactionDigest = async (transaction, chainId = MAINNET_CHAIN_ID, sha256 = sha256Browser) => {
   if (typeof chainId === 'string') chainId = hexToUint8Array(chainId)
   const buffer = new ByteBuffer(ByteBuffer.DEFAULT_CAPACITY, ByteBuffer.LITTLE_ENDIAN)
   const temp = { ...transaction }
