@@ -130,6 +130,65 @@ const comment = {
   ref_block_prefix: 2999500557
 }
 
+// 872cefc8376d6abffc8d66cbe181ffa4aa28e61c
+const accountUpdate = {
+  expiration: '2025-09-27T15:28:10',
+  extensions: [],
+  operations: [
+    {
+      type: 'account_update_operation',
+      value: {
+        account: 'techcoderx',
+        memo_key: 'STM6zLNtyFVToBsBZDsgMhgjpwysYVbsQD6YhP3kRkQhANUB4w7Qp',
+        json_metadata: ''
+      }
+    }
+  ],
+  signatures: [],
+  ref_block_num: 52283,
+  ref_block_prefix: 3934909655
+}
+
+// 72ede9787d5659ffb8b511d97a528683a63ba0e1
+const accountCreate = {
+  expiration: '2025-10-01T12:00:00',
+  extensions: [],
+  operations: [
+    {
+      type: 'account_create_operation',
+      value: {
+        fee: {
+          nai: '@@000000021',
+          amount: '3000',
+          precision: 3
+        },
+        creator: 'techcoderx',
+        new_account_name: 'newaccount1',
+        owner: {
+          weight_threshold: 1,
+          account_auths: [],
+          key_auths: [['STM6brDQZubK9aMXdN14WuQqX1Ev5deFZCHqQFGtWaQLPaBvqimgm', 1]]
+        },
+        active: {
+          weight_threshold: 1,
+          account_auths: [],
+          key_auths: [['STM6Gc9bJpGMm9mUrC5mEheygVKXDZthdYrVNResEwPj4brb44WvU', 1]]
+        },
+        posting: {
+          weight_threshold: 1,
+          account_auths: [],
+          key_auths: [['STM5Pqnkiii5Z83T9UKQ3cDqo5mDfzRn4o9qG4sCPjQQykz1hREKR', 1]]
+        },
+        memo_key: 'STM5tDQYgeutShX7rzerpUomgphJAsf6gELfpEmXFuSXoY2KGrGux',
+        json_metadata: ''
+      }
+    }
+  ],
+  signatures: [],
+  ref_block_num: 12345,
+  ref_block_prefix: 987654321
+}
+
 // 85db372428a47aba8aeb154df8650a900c612fa5
 const recurrent_transfer = {
   expiration: '2025-11-20T07:59:08',
@@ -181,6 +240,18 @@ describe('transactionDigest', () => {
   it('should correctly compute digest for comment_operation', async () => {
     const result = await transactionDigest(comment, MAINNET_CHAIN_ID, sha256)
     expect(result.txId).toBe('c4661343cde8e79872f1ba1d2708d6cbe0643c83')
+  })
+
+  it('should correctly compute digest for account_update_operation', async () => {
+    const result = await transactionDigest(accountUpdate, MAINNET_CHAIN_ID, sha256)
+    expect(result.txId).toBe('872cefc8376d6abffc8d66cbe181ffa4aa28e61c')
+    expect(uint8ArrayToHex(result.digest)).toBe('9b7fda72dafcc6549c45ec9b1d8b030339b074534a7dd0bfd097fe96ec93d22e')
+  })
+
+  it('should correctly compute digest for account_create_operation', async () => {
+    const result = await transactionDigest(accountCreate, MAINNET_CHAIN_ID, sha256)
+    expect(result.txId).toBe('72ede9787d5659ffb8b511d97a528683a63ba0e1')
+    expect(uint8ArrayToHex(result.digest)).toBe('48658e9acd1697f8f175b41daf70516d731ce981d6b4d48ff0a0c6ad52fd415b')
   })
 
   it('should correctly compute digest for recurrent_transfer_operation', async () => {

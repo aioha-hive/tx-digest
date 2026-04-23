@@ -27,17 +27,9 @@ const StringSerializer = (buffer, data) => {
   buffer.writeVString(data)
 }
 
-// const Int8Serializer = (buffer, data) => {
-//   buffer.writeInt8(data)
-// }
-
 const Int16Serializer = (buffer, data) => {
   buffer.writeInt16(data)
 }
-
-// const Int32Serializer = (buffer, data) => {
-//   buffer.writeInt32(data)
-// }
 
 const Int64Serializer = (buffer, data) => {
   buffer.writeInt64(data)
@@ -601,9 +593,7 @@ export const Serializer = {
   Date: DateSerializer,
   FlatMap: FlatMapSerializer,
   Int16: Int16Serializer,
-  // Int32: Int32Serializer,
   Int64: Int64Serializer,
-  // Int8: Int8Serializer,
   Memo: EncryptedMemoSerializer,
   Object: ObjectSerializer,
   Operation: OperationSerializer,

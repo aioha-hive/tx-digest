@@ -5,6 +5,13 @@
   "main": "index.js",
   "types": "index.d.ts",
   "type": "module",
+  "sideEffects": false,
+  "exports": {
+    ".": {
+      "types": "./index.d.ts",
+      "default": "./index.js"
+    }
+  },
   "scripts": {
     "test": "vitest"
   },
@@ -16,9 +23,6 @@
   },
   "bugs": {
     "url": "https://github.com/aioha-hive/tx-digest/issues"
-  },
-  "dependencies": {
-    "bs58": "^6.0.0"
   },
   "devDependencies": {
     "@noble/hashes": "^2.0.1",
