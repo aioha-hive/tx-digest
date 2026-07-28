@@ -1,13 +1,16 @@
-import { PublicKey } from './PublicKey.js'
+import { ByteBuffer } from './ByteBuffer.js'
 import { HexBuffer } from './HexBuffer.js'
+import { PublicKey } from './PublicKey.js'
 
-const Extensions = {
+type SerializeFn = (buffer: ByteBuffer, data: any) => void
+
+const Extensions: Record<string, number> = {
   comment_payout_beneficiaries: 0,
   update_proposal_end_date: 1,
   recurrent_transfer_pair_id: 1
 }
 
-const NaiUint32 = (nai) => {
+const NaiUint32 = (nai: string): number => {
   switch (nai) {
     case '@@000000021': // HIVE
       return 3200000035 // ((99999999+2) << 5) | 3
@@ -20,42 +23,43 @@ const NaiUint32 = (nai) => {
   }
 }
 
-const VoidSerializer = () => {
+const VoidSerializer: () => never = () => {
   throw new Error('Void can not be serialized')
 }
-const StringSerializer = (buffer, data) => {
+
+const StringSerializer: SerializeFn = (buffer, data: string) => {
   buffer.writeVString(data)
 }
 
-const Int16Serializer = (buffer, data) => {
+const Int16Serializer: SerializeFn = (buffer, data: number) => {
   buffer.writeInt16(data)
 }
 
-const Int64Serializer = (buffer, data) => {
+const Int64Serializer: SerializeFn = (buffer, data: bigint | string | number) => {
   buffer.writeInt64(data)
 }
 
-const UInt8Serializer = (buffer, data) => {
+const UInt8Serializer: SerializeFn = (buffer, data: number) => {
   buffer.writeUint8(data)
 }
 
-const UInt16Serializer = (buffer, data) => {
+const UInt16Serializer: SerializeFn = (buffer, data: number) => {
   buffer.writeUint16(data)
 }
 
-const UInt32Serializer = (buffer, data) => {
+const UInt32Serializer: SerializeFn = (buffer, data: number) => {
   buffer.writeUint32(data)
 }
 
-const UInt64Serializer = (buffer, data) => {
+const UInt64Serializer: SerializeFn = (buffer, data: bigint | string | number) => {
   buffer.writeUint64(data)
 }
 
-const BooleanSerializer = (buffer, data) => {
+const BooleanSerializer: SerializeFn = (buffer, data: boolean) => {
   buffer.writeByte(data ? 1 : 0)
 }
 
-const ExtensionSerializer = (itemSerializer) => {
+const ExtensionSerializer = (itemSerializer: SerializeFn): SerializeFn => {
   return (buffer, data) => {
     buffer.writeVarint32(Extensions[data.type])
     itemSerializer(buffer, data.value)
@@ -67,24 +71,24 @@ const ExtensionSerializer = (itemSerializer) => {
  * @note This looses precision for amounts larger than 2^53-1/10^precision.
  *       Should not be a problem in real-word usage.
  */
-const AssetSerializer = (buffer, data) => {
+const AssetSerializer: SerializeFn = (buffer, data: { amount: string | bigint | number; nai: string }) => {
   buffer.writeInt64(data.amount)
   buffer.writeUint32(NaiUint32(data.nai))
 }
 
-const DateSerializer = (buffer, data) => {
+const DateSerializer: SerializeFn = (buffer, data: string) => {
   buffer.writeUint32(Math.floor(new Date(data + 'Z').getTime() / 1000))
 }
 
-const PublicKeySerializer = (buffer, data) => {
+const PublicKeySerializer: SerializeFn = (buffer, data: string | null) => {
   if (data === null || (typeof data === 'string' && data.slice(-39) === '1111111111111111111111111111111114T1Anm')) {
     buffer.append(new Uint8Array(33).fill(0))
   } else {
-    buffer.append(PublicKey.from(data).key)
+    buffer.append(PublicKey.from(data as string).key)
   }
 }
 
-const BinarySerializer = (size = null) => {
+const BinarySerializer = (size: number | null = null): SerializeFn => {
   return (buffer, data) => {
     data = HexBuffer.from(data)
     const len = data.buffer.length
@@ -99,9 +103,9 @@ const BinarySerializer = (size = null) => {
   }
 }
 
-const VariableBinarySerializer = BinarySerializer()
+const VariableBinarySerializer: SerializeFn = BinarySerializer()
 
-const FlatMapSerializer = (keySerializer, valueSerializer) => {
+const FlatMapSerializer = (keySerializer: SerializeFn, valueSerializer: SerializeFn): SerializeFn => {
   return (buffer, data) => {
     buffer.writeVarint32(data.length)
     for (const [key, value] of data) {
@@ -111,7 +115,7 @@ const FlatMapSerializer = (keySerializer, valueSerializer) => {
   }
 }
 
-const ArraySerializer = (itemSerializer) => {
+const ArraySerializer = (itemSerializer: SerializeFn): SerializeFn => {
   return (buffer, data) => {
     buffer.writeVarint32(data.length)
     for (const item of data) {
@@ -120,20 +124,20 @@ const ArraySerializer = (itemSerializer) => {
   }
 }
 
-const ObjectSerializer = (keySerializers) => {
+const ObjectSerializer = (keySerializers: [string, SerializeFn][]): SerializeFn => {
   return (buffer, data) => {
     for (const [key, serializer] of keySerializers) {
       try {
         serializer(buffer, data[key])
       } catch (error) {
-        error.message = `${key}: ${error.message}`
+        ;(error as Error).message = `${key}: ${(error as Error).message}`
         throw error
       }
     }
   }
 }
 
-const OptionalSerializer = (valueSerializer) => {
+const OptionalSerializer = (valueSerializer: SerializeFn): SerializeFn => {
   return (buffer, data) => {
     if (data !== undefined) {
       buffer.writeByte(1)
@@ -144,23 +148,23 @@ const OptionalSerializer = (valueSerializer) => {
   }
 }
 
-const AuthoritySerializer = ObjectSerializer([
+const AuthoritySerializer: SerializeFn = ObjectSerializer([
   ['weight_threshold', UInt32Serializer],
   ['account_auths', FlatMapSerializer(StringSerializer, UInt16Serializer)],
   ['key_auths', FlatMapSerializer(PublicKeySerializer, UInt16Serializer)]
 ])
 
-const BeneficiarySerializer = ObjectSerializer([
+const BeneficiarySerializer: SerializeFn = ObjectSerializer([
   ['account', StringSerializer],
   ['weight', UInt16Serializer]
 ])
 
-const PriceSerializer = ObjectSerializer([
+const PriceSerializer: SerializeFn = ObjectSerializer([
   ['base', AssetSerializer],
   ['quote', AssetSerializer]
 ])
 
-const SignedBlockHeaderSerializer = ObjectSerializer([
+const SignedBlockHeaderSerializer: SerializeFn = ObjectSerializer([
   ['previous', BinarySerializer(20)],
   ['timestamp', DateSerializer],
   ['witness', StringSerializer],
@@ -169,13 +173,13 @@ const SignedBlockHeaderSerializer = ObjectSerializer([
   ['witness_signature', BinarySerializer(65)]
 ])
 
-const ChainPropertiesSerializer = ObjectSerializer([
+const ChainPropertiesSerializer: SerializeFn = ObjectSerializer([
   ['account_creation_fee', AssetSerializer],
   ['maximum_block_size', UInt32Serializer],
   ['hbd_interest_rate', UInt16Serializer]
 ])
 
-const OperationDataSerializer = (operationId, definitions) => {
+const OperationDataSerializer = (operationId: number, definitions: [string, SerializeFn][]): SerializeFn => {
   const objectSerializer = ObjectSerializer(definitions)
   return (buffer, data) => {
     buffer.writeVarint32(operationId)
@@ -183,7 +187,7 @@ const OperationDataSerializer = (operationId, definitions) => {
   }
 }
 
-const OperationSerializers = {}
+const OperationSerializers: Record<string, SerializeFn> = {}
 
 OperationSerializers.account_create_operation = OperationDataSerializer(9, [
   ['fee', AssetSerializer],
@@ -528,7 +532,7 @@ OperationSerializers.remove_proposal_operation = OperationDataSerializer(46, [
   ['extensions', ArraySerializer(VoidSerializer)]
 ])
 
-const ProposalUpdateSerializer = ObjectSerializer([['end_date', DateSerializer]])
+const ProposalUpdateSerializer: SerializeFn = ObjectSerializer([['end_date', DateSerializer]])
 
 OperationSerializers.update_proposal_operation = OperationDataSerializer(47, [
   ['proposal_id', UInt64Serializer],
@@ -555,7 +559,7 @@ OperationSerializers.recurrent_transfer_operation = OperationDataSerializer(49, 
   ['extensions', ArraySerializer(ExtensionSerializer(ObjectSerializer([['pair_id', UInt8Serializer]])))]
 ])
 
-const OperationSerializer = (buffer, operation) => {
+const OperationSerializer: SerializeFn = (buffer, operation: { type: string; value: any }) => {
   const serializer = OperationSerializers[operation.type]
   if (!serializer) {
     throw new Error(`No serializer for operation: ${operation.type}`)
@@ -563,12 +567,12 @@ const OperationSerializer = (buffer, operation) => {
   try {
     serializer(buffer, operation.value)
   } catch (error) {
-    error.message = `${operation.type}: ${error.message}`
+    ;(error as Error).message = `${operation.type}: ${(error as Error).message}`
     throw error
   }
 }
 
-const TransactionSerializer = ObjectSerializer([
+const TransactionSerializer: SerializeFn = ObjectSerializer([
   ['ref_block_num', UInt16Serializer],
   ['ref_block_prefix', UInt32Serializer],
   ['expiration', DateSerializer],
@@ -576,7 +580,7 @@ const TransactionSerializer = ObjectSerializer([
   ['extensions', ArraySerializer(StringSerializer)]
 ])
 
-const EncryptedMemoSerializer = ObjectSerializer([
+const EncryptedMemoSerializer: SerializeFn = ObjectSerializer([
   ['from', PublicKeySerializer],
   ['to', PublicKeySerializer],
   ['nonce', UInt64Serializer],
@@ -584,7 +588,31 @@ const EncryptedMemoSerializer = ObjectSerializer([
   ['encrypted', BinarySerializer()]
 ])
 
-export const Serializer = {
+export const Serializer: {
+  Array: typeof ArraySerializer
+  Asset: typeof AssetSerializer
+  Authority: typeof AuthoritySerializer
+  Binary: typeof BinarySerializer
+  Boolean: typeof BooleanSerializer
+  Date: typeof DateSerializer
+  FlatMap: typeof FlatMapSerializer
+  Int16: typeof Int16Serializer
+  Int64: typeof Int64Serializer
+  Memo: typeof EncryptedMemoSerializer
+  Object: typeof ObjectSerializer
+  Operation: typeof OperationSerializer
+  Optional: typeof OptionalSerializer
+  Price: typeof PriceSerializer
+  PublicKey: typeof PublicKeySerializer
+  Extension: typeof ExtensionSerializer
+  String: typeof StringSerializer
+  Transaction: typeof TransactionSerializer
+  UInt16: typeof UInt16Serializer
+  UInt32: typeof UInt32Serializer
+  UInt64: typeof UInt64Serializer
+  UInt8: typeof UInt8Serializer
+  Void: typeof VoidSerializer
+} = {
   Array: ArraySerializer,
   Asset: AssetSerializer,
   Authority: AuthoritySerializer,

@@ -4,10 +4,16 @@
 const textEncoder = new TextEncoder()
 
 export class ByteBuffer {
-  static DEFAULT_CAPACITY = 16
-  static LITTLE_ENDIAN = true
+  static DEFAULT_CAPACITY: number = 16
+  static LITTLE_ENDIAN: boolean = true
 
-  constructor(capacity = ByteBuffer.DEFAULT_CAPACITY, littleEndian = false) {
+  buffer: ArrayBuffer
+  view: DataView
+  offset: number
+  limit: number
+  littleEndian: boolean
+
+  constructor(capacity: number = ByteBuffer.DEFAULT_CAPACITY, littleEndian: boolean = false) {
     this.buffer = new ArrayBuffer(capacity)
     this.view = new DataView(this.buffer)
     this.offset = 0
@@ -15,7 +21,7 @@ export class ByteBuffer {
     this.littleEndian = littleEndian
   }
 
-  _ensure(extra) {
+  _ensure(extra: number): void {
     const needed = this.offset + extra
     if (needed > this.buffer.byteLength) {
       const next = Math.max(this.buffer.byteLength * 2, needed)
@@ -26,7 +32,7 @@ export class ByteBuffer {
     }
   }
 
-  writeInt8(value) {
+  writeInt8(value: number): this {
     this._ensure(1)
     this.view.setInt8(this.offset, value)
     this.offset += 1
@@ -35,51 +41,51 @@ export class ByteBuffer {
 
   writeByte = this.writeInt8
 
-  writeUint8(value) {
+  writeUint8(value: number): this {
     this._ensure(1)
     this.view.setUint8(this.offset, value)
     this.offset += 1
     return this
   }
 
-  writeInt16(value) {
+  writeInt16(value: number): this {
     this._ensure(2)
     this.view.setInt16(this.offset, value, this.littleEndian)
     this.offset += 2
     return this
   }
 
-  writeUint16(value) {
+  writeUint16(value: number): this {
     this._ensure(2)
     this.view.setUint16(this.offset, value, this.littleEndian)
     this.offset += 2
     return this
   }
 
-  writeUint32(value) {
+  writeUint32(value: number): this {
     this._ensure(4)
     this.view.setUint32(this.offset, value, this.littleEndian)
     this.offset += 4
     return this
   }
 
-  writeInt64(value) {
+  writeInt64(value: bigint | string | number): this {
     if (typeof value !== 'bigint') value = BigInt(value)
     this._ensure(8)
-    this.view.setBigInt64(this.offset, value, this.littleEndian)
+    this.view.setBigInt64(this.offset, value as bigint, this.littleEndian)
     this.offset += 8
     return this
   }
 
-  writeUint64(value) {
+  writeUint64(value: bigint | string | number): this {
     if (typeof value !== 'bigint') value = BigInt(value)
     this._ensure(8)
-    this.view.setBigUint64(this.offset, value, this.littleEndian)
+    this.view.setBigUint64(this.offset, value as bigint, this.littleEndian)
     this.offset += 8
     return this
   }
 
-  writeVarint32(value) {
+  writeVarint32(value: number): this {
     value >>>= 0
     while (value >= 0x80) {
       this._ensure(1)
@@ -91,28 +97,29 @@ export class ByteBuffer {
     return this
   }
 
-  writeVString(str) {
+  writeVString(str: string): this {
     const bytes = textEncoder.encode(str)
     this.writeVarint32(bytes.length)
     return this.append(bytes)
   }
 
-  append(source) {
-    const len = source.byteLength
+  append(source: Uint8Array | ArrayBuffer): this {
+    const src = source instanceof ArrayBuffer ? new Uint8Array(source) : source
+    const len = src.byteLength
     if (len === 0) return this
     this._ensure(len)
-    new Uint8Array(this.buffer, this.offset).set(source)
+    new Uint8Array(this.buffer, this.offset).set(src)
     this.offset += len
     return this
   }
 
-  flip() {
+  flip(): this {
     this.limit = this.offset
     this.offset = 0
     return this
   }
 
-  toBuffer() {
+  toBuffer(): ArrayBuffer {
     return this.buffer.slice(this.offset, this.limit)
   }
 }

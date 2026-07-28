@@ -1,20 +1,27 @@
 {
   "name": "@aioha/tx-digest",
-  "version": "2.0.2",
+  "version": "2.1.0",
   "description": "Hive transaction serializer and digest",
-  "main": "index.js",
-  "types": "index.d.ts",
+  "main": "build/index.js",
+  "types": "build/index.d.ts",
   "type": "module",
   "sideEffects": false,
   "exports": {
     ".": {
-      "types": "./index.d.ts",
-      "default": "./index.js"
+      "types": "./build/index.d.ts",
+      "default": "./build/index.js"
     }
   },
   "scripts": {
+    "build": "tsc",
     "test": "vitest"
   },
+  "files": [
+    "build",
+    "src",
+    "LICENSE",
+    "README.md"
+  ],
   "keywords": [],
   "author": "techcoderx",
   "license": "MIT",
@@ -26,6 +33,7 @@
   },
   "devDependencies": {
     "@noble/hashes": "^2.0.1",
+    "typescript": "^5.7.0",
     "vitest": "^4.0.17"
   }
 }

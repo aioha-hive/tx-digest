@@ -1,5 +1,5 @@
-import { transactionDigest, MAINNET_CHAIN_ID } from './index.js'
-import { uint8ArrayToHex } from './helpers/uint8Array.js'
+import { transactionDigest, MAINNET_CHAIN_ID } from '../src/index.js'
+import { uint8ArrayToHex } from '../src/helpers/uint8Array.js'
 import { sha256 } from '@noble/hashes/sha2.js'
 import { describe, it, expect } from 'vitest'
 

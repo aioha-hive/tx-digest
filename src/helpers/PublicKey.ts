@@ -1,13 +1,13 @@
 const DEFAULT_ADDRESS_PREFIX = 'STM'
 
 const BASE58_ALPHABET = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz'
-const BASE58_MAP = (() => {
+const BASE58_MAP: Int8Array = (() => {
   const m = new Int8Array(128).fill(-1)
   for (let i = 0; i < BASE58_ALPHABET.length; i++) m[BASE58_ALPHABET.charCodeAt(i)] = i
   return m
 })()
 
-const base58Decode = (str) => {
+const base58Decode = (str: string): Uint8Array => {
   if (str.length === 0) return new Uint8Array(0)
   let zeros = 0
   while (zeros < str.length && str[zeros] === '1') zeros++
@@ -34,19 +34,22 @@ const base58Decode = (str) => {
 
 /** ECDSA (secp256k1) public key. */
 export class PublicKey {
-  constructor(key, prefix = DEFAULT_ADDRESS_PREFIX) {
+  key: Uint8Array
+  prefix: string
+
+  constructor(key: Uint8Array, prefix: string = DEFAULT_ADDRESS_PREFIX) {
     this.key = key
     this.prefix = prefix
   }
 
   /** Create a new instance from a WIF-encoded key. */
-  static fromString(wif) {
+  static fromString(wif: string): PublicKey {
     const { key, prefix } = decodePublic(wif)
     return new PublicKey(key, prefix)
   }
 
   /** Create a new instance. */
-  static from(value) {
+  static from(value: PublicKey | string): PublicKey {
     if (value instanceof PublicKey) {
       return value
     } else {
@@ -56,7 +59,7 @@ export class PublicKey {
 }
 
 /** Decode bs58+ripemd160-checksum encoded public key. */
-const decodePublic = (encodedKey) => {
+const decodePublic = (encodedKey: string): { key: Uint8Array; prefix: string } => {
   const prefix = encodedKey.slice(0, 3)
   encodedKey = encodedKey.slice(3)
   const buffer = base58Decode(encodedKey)
