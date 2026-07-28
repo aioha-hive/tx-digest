@@ -14,7 +14,7 @@ export const MAINNET_CHAIN_ID: Uint8Array = hexToUint8Array(
 export const transactionDigest = async (
   transaction: any,
   chainId: Uint8Array | string = MAINNET_CHAIN_ID,
-  sha256: (message: Uint8Array) => Promise<Uint8Array> = sha256Browser
+  sha256: (message: Uint8Array) => Promise<Uint8Array> | Uint8Array = sha256Browser
 ): Promise<{ digest: Uint8Array; txId: string; bin: Uint8Array }> => {
   if (typeof chainId === 'string') chainId = hexToUint8Array(chainId)
   const buffer = new ByteBuffer(ByteBuffer.DEFAULT_CAPACITY, ByteBuffer.LITTLE_ENDIAN)
