@@ -33,7 +33,7 @@
   },
   "devDependencies": {
     "@noble/hashes": "^2.0.1",
-    "typescript": "^5.7.0",
+    "typescript": "^7.0.2",
     "vitest": "^4.0.17"
   }
 }
